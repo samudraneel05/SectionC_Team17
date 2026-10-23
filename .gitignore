@@ -1,0 +1,14 @@
+# environments & caches
+.venv*/
+__pycache__/
+*.pyc
+.DS_Store
+
+# large data (volumes, checkpoints) — kept locally, not in git
+data/engine/
+
+# latex build artifacts
+*.aux *.log *.out *.synctex.gz *.fdb_latexmk *.fls
+
+# original-paper LaTeX sources (reference only, not ours)
+arXiv-*/
