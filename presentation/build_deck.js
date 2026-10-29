@@ -1,7 +1,8 @@
 // Section C · Team 17 — 3D FoJ presentation deck
 const pptxgen = require("pptxgenjs");
+const path = require("path");
 
-const FIGS = "/Users/samudraneelsarkar/Downloads/GitHub/IPCV Project/report/figures";
+const FIGS = path.join(__dirname, "..", "report", "figures");
 
 const DARK = "21295C"; // midnight — title/conclusion background
 const PRIMARY = "065A82"; // deep blue — titles

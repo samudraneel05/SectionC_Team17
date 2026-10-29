@@ -13,11 +13,12 @@ domains fail because their structure is smooth or below the patch scale.
 
 ## Reports
 
-- **`report/applications.pdf`** — the project report (Abstract,
+- **`report/project_report.pdf`** — the project report (Abstract,
   Introduction, Methodology, Results and Discussion, Conclusion).
-  Build: `cd report && tectonic applications.tex`
-- **`presentation/SectionC_Team17_presentation.pptx`** — the slide deck.
-  Build: `node presentation/build_deck.js` (needs `npm i pptxgenjs`)
+  Build: `cd report && tectonic project_report.tex`
+- **`presentation/SectionC_Team17_presentation.pptx`** — the slide deck
+  (a PDF export sits alongside it). Build:
+  `node presentation/build_deck.js` (needs `npm i pptxgenjs`)
 - `research/separability_analysis.md` — code-level notes behind the
   mechanism analysis.
 
