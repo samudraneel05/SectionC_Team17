@@ -1,0 +1,291 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\graphicspath{{figures/}{report/figures/}}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=magenta,urlcolor=blue!50!black]{hyperref}
+\usepackage[labelfont=bf]{caption}
+\renewcommand{\figurename}{Fig.}
+
+\newcommand{\dB}{\,\mathrm{dB}}
+
+\title{3D Field of Junctions on New Volumetric Denoising Domains}
+\author{Samudraneel Sarkar, Sakshi Patil$^{*}$, Nikhil Kumar$^{*}$,
+Manpreet Singh$^{*}$\\[1.4em]
+MNNIT Allahabad\\[0.2em]
+{\small\texttt{\{samudraneel.20233249, patil.20233209, nikhil.20233202,
+manpreet.20233180\}@mnnit.ac.in}}}
+\date{}
+
+\begin{document}
+\maketitle
+\begingroup\renewcommand{\thefootnote}{}%
+\footnotetext{$^{*}$Equal contribution; order determined by coin flip.}%
+\endgroup
+
+\begin{abstract}
+3D Field of Junctions (FoJ) is a training-free denoiser that fits each
+patch of a volume with planar wedges meeting at a common vertex and
+averages the overlapping fits. Its demonstrated applications are
+low-dose X-ray CT, cryo-electron tomography, and point-cloud denoising.
+We apply the authors' publicly released implementation to three domains
+outside that set, porous-media micro-CT, an MRI phantom, and binary
+porous media, and compare it with Gaussian, median, and total-variation
+(TV) filtering under controlled noise levels. On micro-CT, classical
+filters are stronger at moderate noise, but FoJ overtakes all of them
+once the input falls below about $11$~dB PSNR, exceeding the best
+classical result by $3.2$~dB at the highest noise tested while retaining
+boundary structure the filters lose. The other two domains mark the
+boundary of the method: it does not help where the structure is smooth
+or smaller than the patch scale.
+\end{abstract}
+
+%=====================================================================
+\section{Introduction}
+
+Volumetric images acquired under dose and time limits are noisy, and
+denoising is a routine step in their analysis. Classical denoisers
+include local filters such as Gaussian smoothing and median filtering,
+variational methods such as total-variation (TV)
+minimization~\cite{rudin1992nonlinear,chambolle2004algorithm}, and
+patch-recurrence methods such as non-local means~\cite{buades2005nonlocal}
+and BM3D~\cite{dabov2007image}; learned denoisers trained on paired
+data~\cite{zhang2017beyond} dominate at moderate noise levels.
+
+Field of Junctions (FoJ)~\cite{verbin2021foj} is a training-free
+structural prior that models each image patch as constant-intensity
+regions separated by boundaries meeting at a vertex, called a junction.
+3D FoJ~\cite{moeini2026foj3d} extends the model to volumes: three planes
+meeting at a common vertex divide each cubic patch into constant-valued
+wedges, and overlapping patch fits are averaged into a denoised volume.
+The method targets the low-SNR regime and was demonstrated on low-dose
+X-ray CT, cryo-electron tomography, and point-cloud denoising.
+
+We apply the released 3D FoJ implementation to three domains outside
+that set. Grayscale micro-CT of porous rock is a natural fit for the
+wedge model, since grains and pores form near-constant regions with
+sharp, piecewise-planar boundaries. An MRI phantom and two binary
+porous-media volumes are poor fits: the first has smooth tissue
+intensities, the second has structure smaller than the patch scale.
+Testing all three under controlled noise shows where the method
+transfers. Our implementation and experiment scripts are available in
+the accompanying
+repository.\footnote{\url{https://github.com/samudraneel05/foj3d-factor-study}}
+
+%=====================================================================
+\section{Methodology}
+
+FoJ partitions a volume into overlapping cubic patches of $R$ voxels per
+side. Inside each patch, three planes through a common vertex split the
+patch into wedge-shaped regions, and each region takes a single constant
+intensity (Fig.~\ref{fig:junction}). A patch is fitted by searching over
+plane orientations and vertex positions to minimize the squared error
+against the input patch; each region's intensity is the mean of the
+voxels it covers. Since every voxel belongs to several overlapping
+patches, the denoised volume is the average of all patch fits covering
+that voxel. The patch size $R$ is the method's main hyperparameter: it
+sets the largest noise scale that averaging can absorb, and the smallest
+structure a wedge model can represent.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{ext/fig_junction_full.png}
+\caption{Junction schematics reproduced from~\cite{moeini2026foj3d}
+(CC~BY~4.0). Left: 2D junctions with three wedge regions. Right: 3D
+junctions with two regions formed by planes through a common vertex.}
+\label{fig:junction}
+\end{figure}
+
+Because each region is a constant, the model removes noise by replacing
+every wedge of the volume with a regional mean. Two consequences follow.
+Structure that is not piecewise-flat at the patch scale, such as smooth
+texture or features smaller than $R$, cannot be represented and is
+averaged away; and the wedge approximation is a coarse model, so it pays
+off only when the noise it removes exceeds the bias it introduces.
+
+We use the authors' released implementation at its default
+configuration.
+
+%=====================================================================
+\section{Results and Discussion}
+
+\paragraph{Setup.}
+We test three domains with public ground truth: a $192^3$ crop of
+Bentheim sandstone micro-CT ($5.85\,\mu\mathrm{m}$ voxels, grains tens
+of voxels across~\cite{bentheim2015zenodo}) under additive Gaussian
+noise at $\sigma\in\{15\%,30\%,40\%,55\%\}$ of the dynamic range; the
+BrainWeb T1 phantom ($181{\times}217{\times}181$~\cite{collins1998brainweb})
+under Rician noise at $\sigma\in\{3\%\ldots13\%\}$; and two binary
+porous-media volumes (a synthetic sphere pack and a segmented Berea
+scan~\cite{neumann2020sandstones}) with feature sizes of about
+2~voxels, under Gaussian noise at $\sigma{=}15\%$. Baselines are
+Gaussian filtering, a $3^3$ median filter, and
+TV~\cite{rudin1992nonlinear,chambolle2004algorithm} at three weights,
+all under identical conditions; FoJ runs at $R\in\{6,8,12\}$, stride 2.
+We also report a boundary F-score over gradient-magnitude edge voxels,
+since edge preservation is FoJ's distinguishing feature.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lrrrrr}
+\toprule
+$\sigma$ & Noisy & Gaussian & Median & TV (best $w$) & FoJ (best $R$)\\
+\midrule
+15\% & 16.89 & \textbf{28.51} & 27.01 & 27.65 & 26.55\\
+30\% & 12.00 & 25.26 & 22.26 & \textbf{26.03} & 25.64\\
+40\% & 10.28 & 23.39 & 20.04 & 23.32 & \textbf{24.93}\\
+55\% & \phantom{0}8.76 & 21.05 & 17.60 & 16.30 & \textbf{24.29}\\
+\bottomrule
+\end{tabular}
+\caption{PSNR (dB) on the Bentheim volume. FoJ overtakes all classical
+baselines once the input PSNR falls below ${\sim}11$~dB ($+1.5$~dB at
+$\sigma{=}40\%$, $+3.2$~dB at $\sigma{=}55\%$) while trailing at moderate
+noise.}
+\label{tab:bentheim}
+\end{table}
+
+\paragraph{Porous-media micro-CT.}
+Table~\ref{tab:bentheim} and Fig.~\ref{fig:curve} show a clean
+crossover. FoJ trails at $\sigma\le30\%$, overtakes every classical
+baseline between 30\% and 40\%, and its margin grows with noise. The
+advantage is concentrated at boundaries: at $\sigma{=}55\%$ FoJ retains
+boundary-F1 $=0.85$--$0.88$ against $0.54$ for the best TV weight, and
+Fig.~\ref{fig:slices} shows the grain--pore interfaces preserved where
+TV loses them. The best patch size grows with noise: $R{=}8$ wins at
+$\sigma{=}55\%$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_slices.png}
+\caption{Bentheim micro-CT, mid-slice, $\sigma{=}55\%$ Gaussian noise.
+FoJ ($R{=}6$) preserves the sharp grain--pore interfaces that Gaussian,
+median, and TV filtering blur.}
+\label{fig:slices}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{fig_curve.png}
+\caption{PSNR versus noise level on Bentheim micro-CT. FoJ (red)
+overtakes the classical filters between $\sigma{=}30\%$ and $40\%$.}
+\label{fig:curve}
+\end{figure}
+
+\paragraph{The other two domains.}
+On the BrainWeb
+T1 phantom~\cite{collins1998brainweb} under Rician noise, FoJ trails a
+median filter by $1$--$5\dB$ at every tested level: smooth tissue
+intensities are not piecewise-flat, so the wedge model's bias outweighs
+its denoising. On two binary porous-media volumes (a synthetic sphere
+pack and a segmented Berea scan~\cite{neumann2020sandstones}) whose
+features span about 2~voxels, FoJ's output collapses toward the mean
+(Fig.~\ref{fig:collapse}), reaching $7.1\dB$ on a $19.5\dB$ input:
+structures smaller than the patch cannot be represented by wedges.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{fig_collapse.png}
+\caption{Collapse on sub-patch-scale binary structure: features of about
+2~voxels cannot be represented inside $R{=}6$ patches and the output
+falls toward the mean.}
+\label{fig:collapse}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{fig_domains.png}
+\caption{FoJ PSNR margin over the best classical denoiser versus input
+PSNR. Above ${\approx}11$~dB input, classical filters are better; below
+it, FoJ is better on piecewise-constant volumes.}
+\label{fig:domains}
+\end{figure}
+
+Fig.~\ref{fig:domains} places all results on one axis: FoJ's margin over
+the best classical filter versus input PSNR. On compatible structure the
+margin grows with noise and crosses zero near an input PSNR of
+$11\dB$; the control domains stay negative because their violation is
+structural rather than noise-driven.
+
+%=====================================================================
+\section{Conclusion}
+
+Across three volumetric domains outside the original study's set, 3D FoJ
+succeeds on the one whose structure its wedge model can express at high
+noise: porous-media micro-CT, where it outperforms Gaussian, median, and
+TV denoising once the input falls below about $11\dB$ PSNR, with a
+$+3.2\dB$ margin and sharply better boundary preservation at the highest
+noise tested. Smooth MRI tissue and sub-patch-scale binary volumes fail.
+The released implementation is an effective training-free denoiser for
+low-SNR volumes with piecewise-flat structure; outside that structure,
+classical filters remain the better choice.
+
+%=====================================================================
+\begin{thebibliography}{99}
+
+\bibitem{rudin1992nonlinear}
+L.~I.~Rudin, S.~Osher, and E.~Fatemi.
+\newblock Nonlinear total variation based noise removal algorithms.
+\newblock \emph{Physica D}, 60(1--4):259--268, 1992.
+
+\bibitem{chambolle2004algorithm}
+A.~Chambolle.
+\newblock An algorithm for total variation minimization and applications.
+\newblock \emph{Journal of Mathematical Imaging and Vision}, 20(1):89--97,
+2004.
+
+\bibitem{buades2005nonlocal}
+A.~Buades, B.~Coll, and J.-M.~Morel.
+\newblock A non-local algorithm for image denoising.
+\newblock In \emph{CVPR}, 2005.
+
+\bibitem{dabov2007image}
+K.~Dabov, A.~Foi, V.~Katkovnik, and K.~Egiazarian.
+\newblock Image denoising by sparse 3-D transform-domain collaborative
+filtering.
+\newblock \emph{IEEE Transactions on Image Processing}, 16(8):2080--2095,
+2007.
+
+\bibitem{zhang2017beyond}
+K.~Zhang, W.~Zuo, Y.~Chen, D.~Meng, and L.~Zhang.
+\newblock Beyond a Gaussian denoiser: Residual learning of deep CNN for
+image denoising.
+\newblock \emph{IEEE Transactions on Image Processing}, 26(7):3142--3155,
+2017.
+
+\bibitem{verbin2021foj}
+D.~Verbin and T.~Zickler.
+\newblock Field of Junctions: Extracting boundary structure at low SNR.
+\newblock In \emph{ICCV}, 2021.
+
+\bibitem{moeini2026foj3d}
+N.~Moeini, N.~Kim, J.~Romberg, and S.~Fridovich-Keil.
+\newblock 3D Field of Junctions: A noise-robust, training-free structural prior
+for volumetric inverse problems.
+\newblock In \emph{ECCV}, 2026. arXiv:2603.02149.
+\newblock Code: \url{https://github.com/voilalab/3D-Field-of-Junctions}.
+
+\bibitem{bentheim2015zenodo}
+S.~Berg, H.~Ott, D.~Armstrong, A.~Schwing, J.~Humphrey, and R.~Necker.
+\newblock High-resolution X-ray computed tomography images of Bentheim
+sandstone (1~MPa, $5.854\,\mu\mathrm{m}$).
+\newblock Zenodo, \url{https://doi.org/10.5281/zenodo.5548582}, 2021.
+
+\bibitem{collins1998brainweb}
+D.~L.~Collins, A.~P.~Zijdenbos, V.~Kollokian, J.~G.~Sled, N.~J.~Kabani,
+C.~J.~Holmes, and A.~C.~Evans.
+\newblock Design and construction of a realistic digital brain phantom.
+\newblock \emph{IEEE Transactions on Medical Imaging}, 17(3):463--468, 1998.
+
+\bibitem{neumann2020sandstones}
+R.~Neumann, M.~Andreeta, and E.~Lucas-Oliveira.
+\newblock 11 sandstones: raw, filtered and segmented data.
+\newblock Digital Rocks Portal, \url{https://doi.org/10.17612/F4H1-W124}, 2020.
+
+\end{thebibliography}
+
+\end{document}
