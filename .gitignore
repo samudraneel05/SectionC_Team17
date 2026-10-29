@@ -12,3 +12,7 @@ data/engine/
 
 # original-paper LaTeX sources (reference only, not ours)
 arXiv-*/
+
+# extended factor-study report — kept locally, not in the assignment repo
+report/report.tex
+report/report.pdf
