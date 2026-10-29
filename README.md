@@ -21,6 +21,11 @@ domains fail because their structure is smooth or below the patch scale.
   `node presentation/build_deck.js` (needs `npm i pptxgenjs`)
 - `research/separability_analysis.md` — code-level notes behind the
   mechanism analysis.
+- **`demo/foj_demo.html`** — self-contained interactive demo: slice through
+  the engine 128³ volume as σ = 0.50 Gaussian noise, the fitted 3D FoJ
+  output (9.34 → 14.29 dB), its junction-boundary map, and the clean
+  reference. Open in any browser, no server needed. Rebuild:
+  `.venv-test/bin/python demo/build_demo.py` (volumes in `demo/volumes/`).
 
 ## Repository layout
 
@@ -28,6 +33,7 @@ domains fail because their structure is smooth or below the patch scale.
 foj3d/         code: patched release copy + experiment drivers
 report/        LaTeX sources, compiled report, figures
 presentation/  slide deck + generator script
+demo/          interactive FoJ demo (single HTML file) + volumes + builder
 data/          result JSONs + DATASETS.md (links to all volumes)
 research/      notes and run logs
 ```
