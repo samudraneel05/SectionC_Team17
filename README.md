@@ -13,21 +13,22 @@ domains fail because their structure is smooth or below the patch scale.
 
 ## Reports
 
-- **`report/applications.pdf`** — the focused project report (4–5 pages:
-  Abstract, Introduction, Methodology, Results and Discussion,
-  Conclusion). Build: `cd report && tectonic applications.tex`
-- **`report/report.pdf`** — the extended study (mechanism analysis +
-  CT-pipeline reproduction). Build: `cd report && tectonic report.tex`
+- **`report/applications.pdf`** — the project report (Abstract,
+  Introduction, Methodology, Results and Discussion, Conclusion).
+  Build: `cd report && tectonic applications.tex`
+- **`presentation/SectionC_Team17_presentation.pptx`** — the slide deck.
+  Build: `node presentation/build_deck.js` (needs `npm i pptxgenjs`)
 - `research/separability_analysis.md` — code-level notes behind the
-  mechanism claims in the extended report.
+  mechanism analysis.
 
 ## Repository layout
 
 ```
-foj3d/      code: patched release copy + experiment drivers
-report/     LaTeX sources, compiled PDFs, figures
-data/       result JSONs + DATASETS.md (links to all volumes)
-research/   notes and run logs
+foj3d/         code: patched release copy + experiment drivers
+report/        LaTeX sources, compiled report, figures
+presentation/  slide deck + generator script
+data/          result JSONs + DATASETS.md (links to all volumes)
+research/      notes and run logs
 ```
 
 ## Implementation details
